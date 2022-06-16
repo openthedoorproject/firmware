@@ -86,7 +86,20 @@ char Keyboard<r, c>::nextChar()
 template <uint16_t r, uint16_t c>
 bool Keyboard<r, c>::hasNext()
 {
-	return nextChar() != Keyboard::NULL_CHAR;
+
+	for(uint16_t y = 0; y < r; y++) {
+		uint8_t rowPin = rowPins[y];
+		digitalWrite(rowPin, HIGH);
+	}
+
+	bool next = digitalRead(columnPins[0]) == HIGH;
+
+	for(uint16_t y = 0; y < r; y++) {
+		uint8_t rowPin = rowPins[y];
+		digitalWrite(rowPin, LOW);
+	}
+
+	return next;
 }
 
 template <uint16_t r, uint16_t c>
