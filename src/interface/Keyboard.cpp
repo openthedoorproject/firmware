@@ -67,7 +67,7 @@ char Keyboard<r, c>::nextChar()
 
 		for (uint8_t column = 0; column < c; column++)
 		{
-			uint8_t columnPin = columnPins[0];
+			uint8_t columnPin = columnPins[column];
 
 			if (digitalRead(columnPin) == HIGH)
 			{
