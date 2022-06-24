@@ -6,11 +6,12 @@ const byte colunas = 4;
 const int ledVermelho = 12;
 const int ledVerde = 2;
 const int ledAmarelo = 3;
+const String senhaV = "123#";
 
 byte pinosLinhas[linhas] = {11, 10, 9, 8};
 byte pinosColunas[colunas] = {7, 6, 5, 4};
 String senhaDigitada;
-const String senhaV = "123#";
+int situacao = 0;
 char teclas[linhas][colunas] = {
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
@@ -33,43 +34,57 @@ void loop() {
   char teclaApertada = teclado.getKey();
   
   if (teclaApertada) {
-   
-  digitalWrite(ledAmarelo, HIGH);
-    //Serial.print("Tecla digitada: ");
-    //Serial.println(teclaApertada);
-     senhaDigitada+=teclaApertada;
+    situacao = 1;
+    mostrarSituacao(situacao);
+    senhaDigitada+=teclaApertada;
+
      if(teclaApertada=='#'){
       if(validarSenha(senhaDigitada, senhaV)){
-         digitalWrite(ledAmarelo, LOW);
-         digitalWrite(ledVerde, HIGH); 
+        situacao = 2;
+        mostrarSituacao(situacao);
         Serial.println("Acesso concedido");
         delay(2000);
       }else{
-         digitalWrite(ledAmarelo, LOW);
-         digitalWrite(ledVermelho, HIGH);
+         situacao = 3;
+         mostrarSituacao(situacao);
          Serial.println("Acesso negado" + senhaDigitada);
          delay(2000);
          
       }
-      //digitalWrite(ledAmarelo, LOW);
-      digitalWrite(ledVerde, LOW);
-      digitalWrite(ledVermelho, LOW);
+      
       senhaDigitada="";
-    //Serial.print("Senha digitada: ");
-    //Serial.println(senhaDigitada);
+      situacao = 0;
+    
      }
   }
  
  }
 
  bool validarSenha(String senha, String senhaV){
-  if(senha == senhaV){
+  if(senha == senhaV)
     return true;
-  }else{
+  else
     return false;
-  }
-  //digitalWrite(ledAmarelo, LOW);
-  //digitalWrite(ledVermelho, LOW);
-  //digitalWrite(ledVerde, LOW);
+ }
+
+ void  mostrarSituacao(int situacao){
+    if(situacao == 0){
+      digitalWrite(ledAmarelo, LOW);
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, LOW);
+    }else if(situacao == 1){
+      digitalWrite(ledAmarelo, HIGH);
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, LOW);
+    }else if(situacao == 2){
+      digitalWrite(ledAmarelo, LOW);
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, LOW);
+    }else if(situacao == 3){
+      digitalWrite(ledAmarelo, LOW);
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, HIGH);
+    }
+
  }
  
