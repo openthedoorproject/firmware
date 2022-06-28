@@ -3,13 +3,13 @@
 
 const byte linhas = 4;
 const byte colunas = 4;
-const int ledVermelho = 12;
+const int ledVermelho = 4;
 const int ledVerde = 2;
 const int ledAmarelo = 3;
 const String senhaV = "123#";
 
-byte pinosLinhas[linhas] = {11, 10, 9, 8};
-byte pinosColunas[colunas] = {7, 6, 5, 4};
+byte pinosLinhas[linhas] = {13, 12, 11, 10};
+byte pinosColunas[colunas] = {9, 8, 7, 6};
 String senhaDigitada;
 int situacao = 0;
 char teclas[linhas][colunas] = {
