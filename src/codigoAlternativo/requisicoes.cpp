@@ -3,7 +3,7 @@
 
 const char* ssid = "nomeDoWifi";
 const char* password = "senhaDoWifi";
-const char URL = "http://elabkey.freetzi.com/api{arquivo.php}";
+const char URL = "http://elabkey.heroku.com/api{arquivo.php}";
 
 void setup(){
 
