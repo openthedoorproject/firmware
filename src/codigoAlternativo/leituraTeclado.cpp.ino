@@ -6,6 +6,7 @@ const byte colunas = 4;
 const int ledVermelho = 4;
 const int ledVerde = 2;
 const int ledAmarelo = 3;
+const int rele; // definir pino
 const String senhaV = "123#";
 
 byte pinosLinhas[linhas] = {13, 12, 11, 10};
@@ -32,23 +33,26 @@ void setup() {
 
 void loop() {
   char teclaApertada = teclado.getKey();
-  
+  abrirFecharPorta(situacao);
+
   if (teclaApertada) {
     situacao = 1;
-    mostrarSituacao(situacao);
+    acenderLeds(situacao);
     senhaDigitada+=teclaApertada;
 
      if(teclaApertada=='#'){
       if(validarSenha(senhaDigitada, senhaV)){
         situacao = 2;
-        mostrarSituacao(situacao);
+        acenderLeds(situacao);
+        abrirFecharPorta(situacao);
         Serial.println("Acesso concedido");
-        delay(2000);
+        delay(10000);
       }else{
          situacao = 3;
-         mostrarSituacao(situacao);
+         acenderLeds(situacao);
+         abrirFecharPorta(situacao);
          Serial.println("Acesso negado" + senhaDigitada);
-         delay(2000);
+         delay(10000);
          
       }
       
@@ -67,7 +71,7 @@ void loop() {
     return false;
  }
 
- void  mostrarSituacao(int situacao){
+ void acenderLeds(int situacao){
     if(situacao == 0){
       digitalWrite(ledAmarelo, LOW);
       digitalWrite(ledVerde, LOW);
@@ -85,6 +89,14 @@ void loop() {
       digitalWrite(ledVerde, LOW);
       digitalWrite(ledVermelho, HIGH);
     }
+
+ void abrirFecharPorta(int situacao){
+   if(situacao == 2){
+     digitalWriter(rele, HIGH);
+   }else if(situacao == 3 || situacao == 0){
+     digitalWrite(rele, LOW);
+   }
+ }
 
  }
  
