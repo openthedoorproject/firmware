@@ -15,6 +15,10 @@ struct Password {
     }
 
     operator String() {
+        return this->toString();
+    }
+
+    String toString() {
         return content;
     }
 
