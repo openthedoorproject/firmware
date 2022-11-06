@@ -9,8 +9,6 @@
 #include "Auth/PasswordParser.h"
 #include "Auth/Auth.h"
 
-#include <LiquidCrystal_I2C.h>
-
 enum State : int
 {
     WAITING = 0,
