@@ -1,12 +1,18 @@
 #pragma once
 
-#include "Password.h"
+#include <Arduino.h>
 
-namespace Auth {
+namespace Auth
+{
+    enum Response {
+        ACCEPTED,
+        DENIED,
+        ERROR
+    };
 
-    void Init(const char* authServiceUrl, const char* wifiSsid, const char* wifiPassword);
+    void Init(const String &authenticationServiceUrl, const String &ssid, const String &password);
 
-    bool VerifyPassword(const String& password);
+    Response VerifyPassword(int laboratory, const String &password);
 
-    bool VerifyCard(const String& cardCode);
+    Response VerifyCard(int laboratory, const String &cardData);
 }
