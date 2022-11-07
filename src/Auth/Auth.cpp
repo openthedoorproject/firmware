@@ -1,55 +1,58 @@
 #include "Auth.h"
 
-#include "Logger.h"
+#include "System.h"
 
+#include <Arduino.h>
+#include <ArduinoJson.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-#include <ArduinoJson.h>
+static const char* serviceUrl;
 
-static String serviceUrl;
-static int laboratory;
-
-static Auth::Response requestAccess(const String &payload)
+void Auth::Init(const char* authServiceUrl, const char *wifiSsid, const char *wifiPassword)
 {
-    HTTPClient httpClient;
+    ::serviceUrl = authServiceUrl;
+    
+    WiFi.begin(wifiSsid, wifiPassword);
 
-    httpClient.begin(serviceUrl);
-
-    int responseCode = httpClient.POST(payload);
-
-    if (responseCode != 200)
-        return Auth::ERROR;
-
-    StaticJsonDocument<40> response;
-
-    String rawResponse = httpClient.getString();
-    deserializeJson(response, rawResponse);
-
-    String access = response["access"].as<String>();
-
-    return access == "true"? Auth::ACCEPTED : Auth::DENIED;
-}
-
-void Auth::Init(const String &authenticationServiceUrl, const String &ssid, const String &password)
-{
-    WiFi.begin(ssid.c_str(), password.c_str());
-
-    LOG_INFO("Connecting WiFi...");
+    LOG_INFO("Connection wifi...");
     while (!WiFi.isConnected())
-        ;
-    LOG_INFO("Conneted!");
-
-    serviceUrl = authenticationServiceUrl;
-    ::laboratory = laboratory;
+    {
+        delay(100);
+    }
+    LOG_INFO("Wifi connected!");
 }
 
-Auth::Response Auth::VerifyPassword(int laboratory, const String &password)
+static DynamicJsonDocument requestAuthenticationServer(String payload)
 {
-    return requestAccess("{\"lab\":" + String(laboratory) + ",\"password\":\"" + password + "\"}");
+    HTTPClient client;
+
+    client.setTimeout(10000);
+    client.setReuse(false);
+
+    const char* url = API_URL "/access.php";
+
+    client.begin(url);
+    client.POST(payload);
+
+    String responseJson = client.getString();
+
+    DynamicJsonDocument responseDocument(50);
+    deserializeJson(responseDocument, responseJson);
+
+    return responseDocument;
 }
 
-Auth::Response Auth::VerifyCard(int laboratory, const String &cardData)
+bool Auth::VerifyPassword(const String &password)
 {
-    return requestAccess("{\"lab\":" + String(laboratory) + ",\"card\":\"" + cardData + "\"}");
+    LOG_INFO("checking password: " + password);
+    DynamicJsonDocument response = requestAuthenticationServer("{\"access\": \"" + password + "\"}");
+
+    return password == "1245";
+    return response["access"] == "true";
+}
+
+bool Auth::VerifyCard(const String &cardCode) {
+    LOG_INFO("read card: 0x" + cardCode);
+    return cardCode == "e7693f63";
 }
