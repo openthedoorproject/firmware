@@ -19,6 +19,10 @@ void Display::Write(const String& text) {
     lcd.print(text);
 }
 
+void Display::Write(char character) {
+    lcd.print(character);
+}
+
 void Display::Cursor(int row, int column) {
     lcd.setCursor(row, column);
 }

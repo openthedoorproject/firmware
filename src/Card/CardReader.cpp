@@ -5,7 +5,7 @@
 
 #include <MFRC522.h>
 
-static MFRC522 mfrc522(21, 22);
+static MFRC522 mfrc522(14, 27);
 
 static long lastReadTime = -1;
 static long timeout;

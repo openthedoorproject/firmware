@@ -11,9 +11,10 @@
 
 enum State : int
 {
-    WAITING = 0,
+    STARTING = 0,
+    WAITING = 1,
 
-    READING_PASSWORD = 1,
+    READING_PASSWORD =  WAITING << 1,
     READING_CARD = READING_PASSWORD << 1,
     HANDLING_INPUT = READING_CARD | READING_PASSWORD,
 
@@ -27,12 +28,26 @@ enum State : int
     VERIFY_CARD = VERIFY_PASSWORD << 1,
     REQUESTING_AUTH = VERIFY_CARD | VERIFY_PASSWORD,
 
-    GRANT_ACCESS = VERIFY_CARD << 1,
-
-    MALFORMED_PASSWORD = GRANT_ACCESS << 1
+    DENY_ACCESS = VERIFY_CARD << 1,
+    GRANT_ACCESS = DENY_ACCESS << 1
 };
 
-State state;
+State state = STARTING;
+State lastState;
+
+#define ONCE_PER_STATE(handler) \
+    if (::lastState != state)   \
+    handler
+
+#define INTERVAL(control, timeout, action) \
+    if (millis() - control > timeout)      \
+    action
+
+inline void SetState(State state)
+{
+    lastState = ::state;
+    ::state = state;
+}
 
 inline bool HasState(State search)
 {
@@ -41,57 +56,74 @@ inline bool HasState(State search)
 
 inline void ToggleState(State targetState)
 {
-    ::state = static_cast<State>(((int)::state) ^ ((int)targetState));
+    SetState(static_cast<State>(((int)::state) ^ ((int)targetState)));
 }
 
 inline void AddState(State state)
 {
-    ::state = static_cast<State>(((int)::state) | ((int)state));
+    SetState(static_cast<State>(((int)::state) | ((int)state)));
 }
 
 inline void RemoveState(State state)
 {
-    ::state = static_cast<State>(((int)::state) & (~((int)state)));
+    SetState(static_cast<State>(((int)::state) & (~((int)state))));
 }
 
-inline void SetState(State state)
+inline bool IsWaiting()
 {
-    ::state = state;
+    return ::state == WAITING;
 }
 
 void setup()
 {
     LOG_INIT(9600);
-    Door::Init(4, 13);
+    //Door::Init(4, 13);
     Door::SetOpenTimeout(7000);
 
-    Keyboard::Init(4, 4, new int[4]{12, 14, 27, 26}, new int[4]{25, 33, 32, 5});
+    //Keyboard::Init(4, 4, new int[4]{12, 14, 27, 26}, new int[4]{25, 33, 32, 5});
 
-    Keyboard::SetRow(0, new char[4]{'1', '2', '3', 'A'});
-    Keyboard::SetRow(1, new char[4]{'4', '5', '6', 'B'});
-    Keyboard::SetRow(2, new char[4]{'7', '8', '9', 'C'});
-    Keyboard::SetRow(3, new char[4]{'*', '0', '#', 'D'});
+    //Keyboard::SetRow(0, new char[4]{'1', '2', '3', 'A'});
+    //Keyboard::SetRow(1, new char[4]{'4', '5', '6', 'B'});
+    //Keyboard::SetRow(2, new char[4]{'7', '8', '9', 'C'});
+    //Keyboard::SetRow(3, new char[4]{'*', '0', '#', 'D'});
 
-    PasswordParser::SetTimeout(4000);
-    PasswordParser::SetPasswordSize(4);
+    //PasswordParser::SetTimeout(4000);
+    //PasswordParser::SetPasswordSize(4);
 
-    CardReader::Init(22, 21);
+    CardReader::Init(27, 14);
 
-    state = WAITING;
+    Auth::Init("http://e-labkey.000webhostapp.com/api/access.php", "EVERALDO_OI_FIBRA_2.4", "caracoletico");
+
+    SetState(WAITING);
 
     LOG_INFO("setup finished");
+}
+
+static void wait()
+{
+    // ONCE_PER_STATE(Display::Clear());
+    // ONCE_PER_STATE(Display::Cursor(0, 0));
+    // ONCE_PER_STATE(Display::Write("Open the door"));
+
+    ONCE_PER_STATE(LOG_INFO("open the door: waiting"));
 }
 
 static void processPassword()
 {
     PasswordParser::ParsingState parsingState = PasswordParser::Parse();
 
+    //ONCE_PER_STATE(Display::Clear());
+    //ONCE_PER_STATE(Display::Write("Insira a senha"));
+    //ONCE_PER_STATE(Display::Cursor(1, 0));
+
+    ONCE_PER_STATE(LOG_INFO("insira a senha"));
+
     if (parsingState & PasswordParser::ENDED)
     {
         if (parsingState == PasswordParser::ERROR)
         {
             LOG_WARN("error while parsing password");
-            AddState(LED_RED);
+            AddState(DENY_ACCESS);
         }
         else
         {
@@ -106,6 +138,10 @@ static void verifyPassword()
 {
     String password = PasswordParser::GetParsedPassword();
 
+    // ONCE_PER_STATE(Display::Clear());
+    // ONCE_PER_STATE(Display::Write("Verificando..."));
+    ONCE_PER_STATE(LOG_INFO("verificando..."));
+
     if (Auth::VerifyPassword(password))
     {
         LOG_INFO("password accepted");
@@ -114,7 +150,7 @@ static void verifyPassword()
     else
     {
         LOG_INFO("invalid password");
-        AddState(LED_RED);
+        AddState(DENY_ACCESS);
     }
 
     RemoveState(VERIFY_PASSWORD);
@@ -125,7 +161,7 @@ static void processCard()
     if (CardReader::ReadCard() == CardReader::ERROR)
     {
         LOG_ERROR("fail to read card");
-        AddState(LED_RED);
+        AddState(DENY_ACCESS);
     }
     else
     {
@@ -140,6 +176,11 @@ static void verifyCard()
 {
     CardReader::UID inputUID = CardReader::GetCardUID();
 
+    // ONCE_PER_STATE(Display::Clear());
+    // ONCE_PER_STATE(Display::Write("Verificando..."));
+
+    ONCE_PER_STATE(LOG_INFO("Verificando..."));
+
     if (Auth::VerifyCard(inputUID.HexString()))
     {
         AddState(GRANT_ACCESS);
@@ -147,14 +188,32 @@ static void verifyCard()
     else
     {
         LOG_INFO("invalid card");
-        AddState(LED_RED);
+        AddState(DENY_ACCESS);
     }
 
     RemoveState(VERIFY_CARD);
 }
 
-static void grantAccess()
+static void denyAccess()
 {
+    static long requestTime;
+
+    // ONCE_PER_STATE(Display::Clear());
+    // ONCE_PER_STATE(Display::Write("Acesso negado"));
+    // ONCE_PER_STATE(requestTime = millis());
+
+    ONCE_PER_STATE(LOG_INFO("acesso negado"));
+
+    INTERVAL(requestTime, 3000, RemoveState(DENY_ACCESS));
+}
+
+static void grantAccess(bool showMessage = true)
+{
+    // ONCE_PER_STATE(Display::Clear());
+    // ONCE_PER_STATE(Display::Write("Acesso permitido"));
+
+    ONCE_PER_STATE(LOG_INFO("acesso permitido"));
+
     if (!Door::GrantAccess())
         RemoveState(GRANT_ACCESS);
 }
@@ -202,10 +261,16 @@ static void processStates()
         else if (HasState(READING_CARD))
             processCard();
     }
+    else if (IsWaiting())
+    {
+        LOG_INFO("waiting");
+        wait();
+    }
 }
 
 void loop()
 {
     checkInputs();
     processStates();
+    lastState = ::state;
 }

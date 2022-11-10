@@ -8,6 +8,8 @@ namespace Display {
 
     void Write(const String& text);
 
+    void Write(char character);
+
     void Cursor(int row, int column);
 
     void Clear();
