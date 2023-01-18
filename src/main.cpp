@@ -11,10 +11,10 @@
 
 enum State : int
 {
-    STARTING = 0,
-    WAITING = 1,
+    WAITING = 0,
+    STARTING = 1,
 
-    READING_PASSWORD =  WAITING << 1,
+    READING_PASSWORD = STARTING << 1,
     READING_CARD = READING_PASSWORD << 1,
     HANDLING_INPUT = READING_CARD | READING_PASSWORD,
 
@@ -33,10 +33,10 @@ enum State : int
 };
 
 State state = STARTING;
-State lastState;
+bool stateChanged = false;
 
 #define ONCE_PER_STATE(handler) \
-    if (::lastState != state)   \
+    if (stateChanged)           \
     handler
 
 #define INTERVAL(control, timeout, action) \
@@ -45,7 +45,7 @@ State lastState;
 
 inline void SetState(State state)
 {
-    lastState = ::state;
+    stateChanged = stateChanged || state != ::state;
     ::state = state;
 }
 
@@ -66,6 +66,7 @@ inline void AddState(State state)
 
 inline void RemoveState(State state)
 {
+    LOG_INFO("removing state: " + String((int)state));
     SetState(static_cast<State>(((int)::state) & (~((int)state))));
 }
 
@@ -77,18 +78,20 @@ inline bool IsWaiting()
 void setup()
 {
     LOG_INIT(9600);
-    //Door::Init(4, 13);
+    Door::Init(4, 5);
     Door::SetOpenTimeout(7000);
 
-    //Keyboard::Init(4, 4, new int[4]{12, 14, 27, 26}, new int[4]{25, 33, 32, 5});
+    // Keyboard::Init(4, 4, new int[4]{12, 14, 27, 26}, new int[4]{25, 33, 32, 5});
 
-    //Keyboard::SetRow(0, new char[4]{'1', '2', '3', 'A'});
-    //Keyboard::SetRow(1, new char[4]{'4', '5', '6', 'B'});
-    //Keyboard::SetRow(2, new char[4]{'7', '8', '9', 'C'});
-    //Keyboard::SetRow(3, new char[4]{'*', '0', '#', 'D'});
+    // Keyboard::SetRow(0, new char[4]{'1', '2', '3', 'A'});
+    // Keyboard::SetRow(1, new char[4]{'4', '5', '6', 'B'});
+    // Keyboard::SetRow(2, new char[4]{'7', '8', '9', 'C'});
+    // Keyboard::SetRow(3, new char[4]{'*', '0', '#', 'D'});
 
-    //PasswordParser::SetTimeout(4000);
-    //PasswordParser::SetPasswordSize(4);
+    // PasswordParser::SetTimeout(4000);
+    // PasswordParser::SetPasswordSize(4);
+
+    Display::Init(0x27, 2, 16);
 
     CardReader::Init(27, 14);
 
@@ -101,9 +104,8 @@ void setup()
 
 static void wait()
 {
-    // ONCE_PER_STATE(Display::Clear());
-    // ONCE_PER_STATE(Display::Cursor(0, 0));
-    // ONCE_PER_STATE(Display::Write("Open the door"));
+    ONCE_PER_STATE(Display::Clear());
+    ONCE_PER_STATE(Display::Write("Open the door"));
 
     ONCE_PER_STATE(LOG_INFO("open the door: waiting"));
 }
@@ -112,9 +114,9 @@ static void processPassword()
 {
     PasswordParser::ParsingState parsingState = PasswordParser::Parse();
 
-    //ONCE_PER_STATE(Display::Clear());
-    //ONCE_PER_STATE(Display::Write("Insira a senha"));
-    //ONCE_PER_STATE(Display::Cursor(1, 0));
+    // ONCE_PER_STATE(Display::Clear());
+    // ONCE_PER_STATE(Display::Write("Insira a senha"));
+    // ONCE_PER_STATE(Display::Cursor(1, 0));
 
     ONCE_PER_STATE(LOG_INFO("insira a senha"));
 
@@ -196,12 +198,12 @@ static void verifyCard()
 
 static void denyAccess()
 {
-    static long requestTime;
+    static unsigned long requestTime;
 
-    // ONCE_PER_STATE(Display::Clear());
-    // ONCE_PER_STATE(Display::Write("Acesso negado"));
-    // ONCE_PER_STATE(requestTime = millis());
+    ONCE_PER_STATE(Display::Clear());
+    ONCE_PER_STATE(Display::Write("Acesso negado"));
 
+    ONCE_PER_STATE(requestTime = millis());
     ONCE_PER_STATE(LOG_INFO("acesso negado"));
 
     INTERVAL(requestTime, 3000, RemoveState(DENY_ACCESS));
@@ -209,8 +211,13 @@ static void denyAccess()
 
 static void grantAccess(bool showMessage = true)
 {
-    // ONCE_PER_STATE(Display::Clear());
-    // ONCE_PER_STATE(Display::Write("Acesso permitido"));
+    ONCE_PER_STATE({
+        if (showMessage)
+        {
+            Display::Clear();
+            Display::Write("Acesso permitido");
+        }
+    });
 
     ONCE_PER_STATE(LOG_INFO("acesso permitido"));
 
@@ -243,9 +250,15 @@ static void checkInputs()
 
 static void processStates()
 {
+    State lastState = state;
+
     if (HasState(GRANT_ACCESS))
     {
         grantAccess();
+    }
+    else if (HasState(DENY_ACCESS))
+    {
+        denyAccess();
     }
     else if (HasState(REQUESTING_AUTH))
     {
@@ -263,14 +276,14 @@ static void processStates()
     }
     else if (IsWaiting())
     {
-        LOG_INFO("waiting");
         wait();
     }
+
+    stateChanged = state != lastState;
 }
 
 void loop()
 {
     checkInputs();
     processStates();
-    lastState = ::state;
 }
