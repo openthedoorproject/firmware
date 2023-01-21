@@ -78,24 +78,24 @@ inline bool IsWaiting()
 void setup()
 {
     LOG_INIT(9600);
-    Door::Init(4, 5);
+    Door::Init(4, 17);
     Door::SetOpenTimeout(7000);
 
-    // Keyboard::Init(4, 4, new int[4]{12, 14, 27, 26}, new int[4]{25, 33, 32, 5});
+    Keyboard::Init(4, 4, new int[4]{12, 14, 27, 26}, new int[4]{25, 33, 32, 5});
 
-    // Keyboard::SetRow(0, new char[4]{'1', '2', '3', 'A'});
-    // Keyboard::SetRow(1, new char[4]{'4', '5', '6', 'B'});
-    // Keyboard::SetRow(2, new char[4]{'7', '8', '9', 'C'});
-    // Keyboard::SetRow(3, new char[4]{'*', '0', '#', 'D'});
+    Keyboard::SetRow(0, new char[4]{'1', '2', '3', 'A'});
+    Keyboard::SetRow(1, new char[4]{'4', '5', '6', 'B'});
+    Keyboard::SetRow(2, new char[4]{'7', '8', '9', 'C'});
+    Keyboard::SetRow(3, new char[4]{'*', '0', '#', 'D'});
 
-    // PasswordParser::SetTimeout(4000);
-    // PasswordParser::SetPasswordSize(4);
+    PasswordParser::SetTimeout(4000);
+    PasswordParser::SetPasswordSize(4);
 
     Display::Init(0x27, 2, 16);
 
     CardReader::Init(27, 14);
 
-    Auth::Init("http://e-labkey.000webhostapp.com/api/access.php", "EVERALDO_OI_FIBRA_2.4", "caracoletico");
+    Auth::Init(AUTH_API_URL, LAB_NUMBER, WIFI_SSID, WIFI_PASSWORD);
 
     SetState(WAITING);
 
@@ -114,9 +114,9 @@ static void processPassword()
 {
     PasswordParser::ParsingState parsingState = PasswordParser::Parse();
 
-    // ONCE_PER_STATE(Display::Clear());
-    // ONCE_PER_STATE(Display::Write("Insira a senha"));
-    // ONCE_PER_STATE(Display::Cursor(1, 0));
+    ONCE_PER_STATE(Display::Clear());
+    ONCE_PER_STATE(Display::Write("Insira a senha"));
+    ONCE_PER_STATE(Display::Cursor(1, 0));
 
     ONCE_PER_STATE(LOG_INFO("insira a senha"));
 
@@ -140,8 +140,9 @@ static void verifyPassword()
 {
     String password = PasswordParser::GetParsedPassword();
 
-    // ONCE_PER_STATE(Display::Clear());
-    // ONCE_PER_STATE(Display::Write("Verificando..."));
+    ONCE_PER_STATE(Display::Clear());
+    ONCE_PER_STATE(Display::Write("Verificando..."));
+
     ONCE_PER_STATE(LOG_INFO("verificando..."));
 
     if (Auth::VerifyPassword(password))
@@ -178,8 +179,8 @@ static void verifyCard()
 {
     CardReader::UID inputUID = CardReader::GetCardUID();
 
-    // ONCE_PER_STATE(Display::Clear());
-    // ONCE_PER_STATE(Display::Write("Verificando..."));
+    ONCE_PER_STATE(Display::Clear());
+    ONCE_PER_STATE(Display::Write("Verificando..."));
 
     ONCE_PER_STATE(LOG_INFO("Verificando..."));
 
