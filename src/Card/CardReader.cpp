@@ -5,7 +5,7 @@
 
 #include <MFRC522.h>
 
-static MFRC522 mfrc522(14, 27);
+static MFRC522* mfrc522;
 
 static long lastReadTime = -1;
 static long timeout;
@@ -13,7 +13,9 @@ static long timeout;
 void CardReader::Init(int rtsPin, int sdaPin)
 {
     SPI.begin();
-    mfrc522.PCD_Init();
+
+    mfrc522 = new MFRC522(sdaPin, rtsPin);
+    mfrc522->PCD_Init();
 
     SetTimeout(2000);
 }
@@ -30,12 +32,12 @@ bool CardReader::HasCard()
 
     lastReadTime = millis();
 
-    return mfrc522.PICC_IsNewCardPresent();
+    return mfrc522->PICC_IsNewCardPresent();
 }
 
 CardReader::ReadingState CardReader::ReadCard()
 {
-    if (mfrc522.PICC_ReadCardSerial())
+    if (mfrc522->PICC_ReadCardSerial())
         return CardReader::ENDED;
     else
         return CardReader::ERROR;
@@ -43,7 +45,7 @@ CardReader::ReadingState CardReader::ReadCard()
 
 CardReader::UID CardReader::GetCardUID()
 {
-    MFRC522::Uid uid = mfrc522.uid;
+    MFRC522::Uid uid = mfrc522->uid;
 
     return UID(uid.size, uid.uidByte);
 }
