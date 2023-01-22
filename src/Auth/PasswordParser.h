@@ -5,10 +5,12 @@
 namespace PasswordParser
 {
     enum ParsingState {
-        STARTING,
-        READING_INPUT,
-        ENDED,
-        ERROR
+        STARTING = 0,
+        ACCEPTED = 1,
+        NONE = ACCEPTED << 1,
+        READING_INPUT = ACCEPTED | NONE,
+        ERROR = NONE << 1,
+        ENDED = ERROR | (ERROR << 1)
     };
 
     void SetPasswordSize(int size);

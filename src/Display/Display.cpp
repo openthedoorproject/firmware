@@ -25,7 +25,7 @@ void Display::Write(char character) {
 }
 
 void Display::Cursor(int row, int column) {
-    lcd->setCursor(row, column);
+    lcd->setCursor(column, row);
 }
 
 void Display::Clear() {

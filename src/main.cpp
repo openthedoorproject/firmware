@@ -29,8 +29,12 @@ enum State : int
     REQUESTING_AUTH = VERIFY_CARD | VERIFY_PASSWORD,
 
     DENY_ACCESS = VERIFY_CARD << 1,
-    GRANT_ACCESS = DENY_ACCESS << 1
+    GRANT_ACCESS = DENY_ACCESS << 1,
+
+    PERFORMING_OPERATION = HANDLING_INPUT | REQUESTING_AUTH | DENY_ACCESS | GRANT_ACCESS
 };
+
+static bool EXIT_BUTTON_PRESSED = false;
 
 State state = STARTING;
 bool stateChanged = false;
@@ -93,7 +97,7 @@ void setup()
 
     Display::Init(0x27, 2, 16);
 
-    CardReader::Init(16, 14);
+    CardReader::Init(16, 13);
 
     Auth::Init(AUTH_API_URL, LAB_NUMBER, WIFI_SSID, WIFI_PASSWORD);
 
@@ -133,6 +137,10 @@ static void processPassword()
             AddState(VERIFY_PASSWORD);
         }
         RemoveState(READING_PASSWORD);
+    }
+    else if (parsingState & PasswordParser::ACCEPTED)
+    {
+        Display::Write('*');
     }
 }
 
@@ -210,25 +218,39 @@ static void denyAccess()
     INTERVAL(requestTime, 3000, RemoveState(DENY_ACCESS));
 }
 
-static void grantAccess(bool showMessage = true)
+static void grantAccess()
 {
     ONCE_PER_STATE({
-        if (showMessage)
+        Display::Clear();
+        Display::Write("Acesso permitido");
+        LOG_INFO("acesso permitido");
+
+        if (EXIT_BUTTON_PRESSED)
         {
-            Display::Clear();
-            Display::Write("Acesso permitido");
+            Door::IncreaseTimer();
         }
     });
-
-    ONCE_PER_STATE(LOG_INFO("acesso permitido"));
 
     if (!Door::GrantAccess())
         RemoveState(GRANT_ACCESS);
 }
 
+static void buttonPressed()
+{
+    ONCE_PER_STATE({
+        if (HasState(GRANT_ACCESS))
+        {
+            Door::IncreaseTimer();
+        }
+    });
+
+    if (!Door::GrantAccess())
+        EXIT_BUTTON_PRESSED = false;
+}
+
 static void checkInputs()
 {
-    if (!HasState(HANDLING_INPUT))
+    if (!HasState(PERFORMING_OPERATION))
     {
         if (Keyboard::HasInput())
         {
@@ -244,7 +266,7 @@ static void checkInputs()
 
     if (Door::OpenButtonPressed())
     {
-        AddState(GRANT_ACCESS);
+        EXIT_BUTTON_PRESSED = true;
         LOG_INFO("door's button input found");
     }
 }
@@ -279,6 +301,9 @@ static void processStates()
     {
         wait();
     }
+
+    if (EXIT_BUTTON_PRESSED)
+        buttonPressed();
 
     stateChanged = state != lastState;
 }
