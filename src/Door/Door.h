@@ -14,5 +14,5 @@ namespace Door
 
     bool GrantAccess();
 
-    void ResetTimer();
+    void IncreaseTimer();
 }

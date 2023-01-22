@@ -3,6 +3,30 @@
 #include "Logger.h"
 #include <Arduino.h>
 
+#ifdef VIRTUAL_KEYBOARD
+
+void Keyboard::Init(int rowCount, int columnCount, const int *rowPins, const int *columnPins) {}
+
+void Keyboard::SetRow(int row, char *characters) {}
+
+bool Keyboard::HasInput()
+{
+    return Serial.available();
+}
+
+char Keyboard::GetPressed(bool blocking)
+{
+
+    if (!Serial.available())
+        return Keyboard::NULL_CHAR;
+
+    char typed = blocking ? Serial.read() : Serial.peek();
+
+    return typed;
+}
+
+#else
+
 static int rowCount, columnCount;
 
 static int *rowPins;
@@ -14,7 +38,6 @@ void Keyboard::Init(int rowCount, int columnCount, const int *rowPins, const int
 {
     ::rowPins = new int[rowCount];
     ::columnPins = new int[columnCount];
-
 
     for (int i = 0; i < rowCount; i++)
     {
@@ -79,7 +102,7 @@ char Keyboard::GetPressed(bool blocking)
 
         digitalWrite(rowPin, LOW);
 
-        if(input != Keyboard::NULL_CHAR)
+        if (input != Keyboard::NULL_CHAR)
             return input;
     }
 
@@ -115,3 +138,4 @@ bool Keyboard::HasInput()
 
     return next;
 }
+#endif

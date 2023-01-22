@@ -4,33 +4,38 @@
 #include <Wire.h>
 
 
-static LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
+static LiquidCrystal_I2C* lcd;
 
 void Display::Init(int address, int rows, int colums) {
     Wire.begin();
     
-    lcd.init();
+    lcd = new LiquidCrystal_I2C(address, rows, colums);
+    lcd->init();
 
     On();
-    lcd.noCursor();
+    lcd->noCursor();
 }
 
 void Display::Write(const String& text) {
-    lcd.print(text);
+    lcd->print(text);
+}
+
+void Display::Write(char character) {
+    lcd->print(character);
 }
 
 void Display::Cursor(int row, int column) {
-    lcd.setCursor(row, column);
+    lcd->setCursor(column, row);
 }
 
 void Display::Clear() {
-    lcd.clear();
+    lcd->clear();
 }
 
 void Display::Off() {
-    lcd.noBacklight();
+    lcd->noBacklight();
 }
 
 void Display::On() {
-    lcd.backlight();
+    lcd->backlight();
 }

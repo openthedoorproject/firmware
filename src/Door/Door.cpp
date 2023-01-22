@@ -91,3 +91,14 @@ bool Door::GrantAccess()
 
     return true;
 }
+
+void Door::IncreaseTimer() {
+
+    if(!IsOpened())
+    {
+        LOG_ERROR("tried to increase timer of closed door");
+        return;
+    }
+
+    openTime += (openTimeout * 3) / 4; // increases time in 75% of timeout
+}

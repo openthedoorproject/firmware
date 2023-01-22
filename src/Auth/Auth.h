@@ -4,7 +4,7 @@
 
 namespace Auth {
 
-    void Init(const char* authServiceUrl, const char* wifiSsid, const char* wifiPassword);
+    void Init(const char* authServiceUrl, int labNumber, const char* wifiSsid, const char* wifiPassword);
 
     bool VerifyPassword(const String& password);
 
