@@ -134,6 +134,10 @@ static void processPassword()
         }
         RemoveState(READING_PASSWORD);
     }
+    else if (parsingState & PasswordParser::ACCEPTED)
+    {
+        Display::Write('*');
+    }
 }
 
 static void verifyPassword()
