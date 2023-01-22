@@ -34,6 +34,8 @@ enum State : int
     PERFORMING_OPERATION = HANDLING_INPUT | REQUESTING_AUTH | DENY_ACCESS | GRANT_ACCESS
 };
 
+static bool EXIT_BUTTON_PRESSED = false;
+
 State state = STARTING;
 bool stateChanged = false;
 
@@ -216,20 +218,34 @@ static void denyAccess()
     INTERVAL(requestTime, 3000, RemoveState(DENY_ACCESS));
 }
 
-static void grantAccess(bool showMessage = true)
+static void grantAccess()
 {
     ONCE_PER_STATE({
-        if (showMessage)
+        Display::Clear();
+        Display::Write("Acesso permitido");
+        LOG_INFO("acesso permitido");
+
+        if (EXIT_BUTTON_PRESSED)
         {
-            Display::Clear();
-            Display::Write("Acesso permitido");
+            Door::IncreaseTimer();
         }
     });
 
-    ONCE_PER_STATE(LOG_INFO("acesso permitido"));
-
     if (!Door::GrantAccess())
         RemoveState(GRANT_ACCESS);
+}
+
+static void buttonPressed()
+{
+    ONCE_PER_STATE({
+        if (HasState(GRANT_ACCESS))
+        {
+            Door::IncreaseTimer();
+        }
+    });
+
+    if (!Door::GrantAccess())
+        EXIT_BUTTON_PRESSED = false;
 }
 
 static void checkInputs()
@@ -250,7 +266,7 @@ static void checkInputs()
 
     if (Door::OpenButtonPressed())
     {
-        AddState(GRANT_ACCESS);
+        EXIT_BUTTON_PRESSED = true;
         LOG_INFO("door's button input found");
     }
 }
@@ -285,6 +301,9 @@ static void processStates()
     {
         wait();
     }
+
+    if (EXIT_BUTTON_PRESSED)
+        buttonPressed();
 
     stateChanged = state != lastState;
 }
