@@ -93,7 +93,7 @@ void setup()
 
     Display::Init(0x27, 2, 16);
 
-    CardReader::Init(27, 14);
+    CardReader::Init(16, 14);
 
     Auth::Init(AUTH_API_URL, LAB_NUMBER, WIFI_SSID, WIFI_PASSWORD);
 
