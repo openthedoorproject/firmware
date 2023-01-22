@@ -29,7 +29,9 @@ enum State : int
     REQUESTING_AUTH = VERIFY_CARD | VERIFY_PASSWORD,
 
     DENY_ACCESS = VERIFY_CARD << 1,
-    GRANT_ACCESS = DENY_ACCESS << 1
+    GRANT_ACCESS = DENY_ACCESS << 1,
+
+    PERFORMING_OPERATION = HANDLING_INPUT | REQUESTING_AUTH | DENY_ACCESS | GRANT_ACCESS
 };
 
 State state = STARTING;
@@ -232,7 +234,7 @@ static void grantAccess(bool showMessage = true)
 
 static void checkInputs()
 {
-    if (!HasState(HANDLING_INPUT))
+    if (!HasState(PERFORMING_OPERATION))
     {
         if (Keyboard::HasInput())
         {
